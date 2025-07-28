@@ -1,4 +1,4 @@
-### Connecting the Dots — Round 1B
+# Connecting the Dots — Round 1B
 ## Challenge Objective
 Transform a set of PDFs into an intelligent assistant for a specific persona performing a real-world task. The system should extract the most relevant content from each document and surface a ranked set of insights tailored to the persona's job to be done.
 
@@ -6,7 +6,7 @@ Transform a set of PDFs into an intelligent assistant for a specific persona per
 Our solution performs persona-driven document intelligence by analyzing content relevance based on semantic similarity between the job description and document sections.
 
 ## Key Components
-# Input JSON Parsing:
+### Input JSON Parsing:
 
 Reads the provided persona.json, which contains:
 
@@ -16,13 +16,13 @@ Reads the provided persona.json, which contains:
 
 - Job to be done (task description)
 
-# PDF Processing:
+### PDF Processing:
 
 Extracts all readable text from each PDF using PyMuPDF
 
 Splits into coherent paragraph blocks with metadata
 
-# Embedding + Similarity:
+### Embedding + Similarity:
 
 Uses sentence-transformers (all-MiniLM-L6-v2, <90MB) to encode both:
 
@@ -32,13 +32,13 @@ Persona + job description as a query
 
 Computes cosine similarity to rank the relevance of each paragraph
 
-# Ranking & Deduplication:
+### Ranking & Deduplication:
 
 Top 5 relevant sections are selected
 
 Paragraphs are deduplicated and reranked across documents
 
-# Final Output:
+### Final Output:
 
 Produces a single structured JSON file with:
 
@@ -68,7 +68,7 @@ connecting-dots-round1b/
 └── output/
     └── output.json            # Final extracted summary
 ## Input / Output Format
-# Input:
+### Input:
 One persona.json file in input/
 
 Multiple .pdf files (3–10) also in input/
@@ -85,7 +85,7 @@ Example persona.json:
     { "filename": "Cities.pdf", "title": "Cities of France" }
   ]
 }
-# Output:
+### Output:
 A single file output.json in the output/ folder
 
 Example output.json (structure):
@@ -140,7 +140,7 @@ Persona: Travel Planner
 Job to Be Done: Plan a 4-day trip for 10 college friends in the South of France.
 Docs: 7 region-specific guides.
 
-# System Output:
+### System Output:
 
 Day-by-day highlights
 
