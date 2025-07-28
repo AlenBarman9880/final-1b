@@ -1,221 +1,175 @@
-# Connecting the Dots — Round 1A
+🧠 Connecting the Dots — Round 1B
+Challenge Objective
+Transform a set of PDFs into an intelligent assistant for a specific persona performing a real-world task. The system should extract the most relevant content from each document and surface a ranked set of insights tailored to the persona's job to be done.
 
-## Challenge Objective
+Solution Overview
+Our solution performs persona-driven document intelligence by analyzing content relevance based on semantic similarity between the job description and document sections.
 
-Reimagine how machines read PDFs by extracting structured outlines from raw documents. This includes identifying the **title**, and **headings** (H1, H2, H3) in a hierarchical format to enable intelligent downstream applications like semantic search, document navigation, and summarization.
+Key Components
+Input JSON Parsing:
 
----
+Reads the provided persona.json, which contains:
 
-## Solution Overview
+List of input PDFs
 
-Our solution reads PDFs, extracts their structural elements, and outputs them as a clean JSON outline.
+Persona description
 
-### Key Components
+Job to be done (task description)
 
-- **Text Extraction**: Leveraged `PyMuPDF` (`fitz`) to extract text, font size, font style, and positioning.
-- **Title Detection**: Title is defined as the first large-font text (H1) on the first page.
-- **Heading Detection**:
-  - Top 3 font sizes dynamically mapped to `H1`, `H2`, `H3`
-  - Font + layout-based heuristics used instead of hardcoding sizes
-- **Line Merging**:
-  - Spans with similar font, same page, and close vertical proximity are merged
-  - Merging is skipped when the next line looks like a new section (e.g., starts with a capital/number or ends with a period)
-- **Noise Filtering**:
-  - Filters out fragments like "fare", "bus", "rs.", etc.
-  - Ignores overly short or repeated utility words
+PDF Processing:
 
----
+Extracts all readable text from each PDF using PyMuPDF
 
-## 📦 File Structure
+Splits into coherent paragraph blocks with metadata
 
-connecting-dots-round1a/
+Embedding + Similarity:
 
-├── extract_headings.py # Main script
+Uses sentence-transformers (all-MiniLM-L6-v2, <90MB) to encode both:
 
-├── requirements.txt # Python dependency list
+Paragraphs from the PDF
 
-├── Dockerfile # Build file for containerized environment
+Persona + job description as a query
 
-├── README.md # You’re reading it
+Computes cosine similarity to rank the relevance of each paragraph
 
-├── input/ # Input PDFs
+Ranking & Deduplication:
 
-└── output/ # JSON output files
+Top 5 relevant sections are selected
 
----
+Paragraphs are deduplicated and reranked across documents
 
-## 📁 Input / Output Format
+Final Output:
 
-### 🧾 Input:
-- Any `.pdf` file placed in the `input/` folder
+Produces a single structured JSON file with:
 
-### 📤 Output:
-- A `.json` file with the same base name in the `output/` folder  
-- Format:
+Metadata
 
+Top 5 extracted sections
+
+Subsection summaries
+
+📦 File Structure
+graphql
+Copy
+Edit
+connecting-dots-round1b/
+
+├── process_documents.py       # Main entry point
+
+├── requirements.txt           # Dependencies
+
+├── Dockerfile                 # AMD64 Docker build file
+
+├── README.md                  # You’re reading it
+
+├── input/
+
+│   ├── persona.json           # Persona and task description
+
+│   └── *.pdf                  # 3–10 PDF documents
+
+└── output/
+    └── output.json            # Final extracted summary
+📁 Input / Output Format
+🧾 Input:
+One persona.json file in input/
+
+Multiple .pdf files (3–10) also in input/
+
+Example persona.json:
+json
+Copy
+Edit
 {
-  "title": "Understanding AI",
-  "outline": [
-    { "level": "H1", "text": "Introduction", "page": 1 },
-    { "level": "H2", "text": "What is AI?", "page": 2 },
-    { "level": "H3", "text": "History of AI", "page": 3 }
+  "persona": { "role": "Travel Planner" },
+  "job_to_be_done": {
+    "task": "Plan a trip of 4 days for a group of 10 college friends."
+  },
+  "documents": [
+    { "filename": "Cities.pdf", "title": "Cities of France" }
   ]
 }
+📤 Output:
+A single file output.json in the output/ folder
 
----
-
-## Docker Instructions
-
-### Build the Docker Image
-
-docker build --platform linux/amd64 -t mysolution:abc123 .
-
-### Run the Container
-
-docker run --rm -v $(pwd)/input:/app/input -v $(pwd)/output:/app/output --network none mysolution:abc123
-On Windows CMD use:
-docker run --rm -v %cd%/input:/app/input -v %cd%/output:/app/output --network none mysolution:abc123
-
----
-
-## Constraints Met
-
-## ✅ Constraints Met
-
-| Constraint                     | Status   |
-|-------------------------------|----------|
-| CPU-only, no GPU              | ✅       |
-| Offline mode (no network)     | ✅       |
-| Execution time ≤ 10s (50 pgs) | ✅       |
-| Model size < 200MB            | ✅ (no model used) |
-| Output format valid JSON      | ✅       |
-
----
-
-## Sample Output
-
+Example output.json (structure):
+json
+Copy
+Edit
 {
-  "title": "Application form for grant of LTC advance",
-  "outline": [
+  "metadata": {
+    "input_documents": [...],
+    "persona": "Travel Planner",
+    "job_to_be_done": "Plan a trip of 4 days for a group of 10 college friends.",
+    "processing_timestamp": "2025-07-20T14:00:00"
+  },
+  "extracted_sections": [
     {
-      "level": "H1",
-      "text": "Application form for grant of LTC advance",
-      "page": 1
+      "document": "Cities.pdf",
+      "section_title": "Top Cities for Youth Travel",
+      "importance_rank": 1,
+      "page_number": 4
     },
+    ...
+  ],
+  "subsection_analysis": [
     {
-      "level": "H2",
-      "text": "Name of the Government Servant",
-      "page": 1
+      "document": "Cities.pdf",
+      "refined_text": "Nice is vibrant and student-friendly, ideal for group visits...",
+      "page_number": 4
     },
-    {
-      "level": "H2",
-      "text": "Designation",
-      "page": 1
-    },
-    {
-      "level": "H2",
-      "text": "Date of entering the Central Government",
-      "page": 1
-    },
-    {
-      "level": "H2",
-      "text": "Service",
-      "page": 1
-    },
-    {
-      "level": "H2",
-      "text": "PAY + SI + NPA",
-      "page": 1
-    },
-    {
-      "level": "H2",
-      "text": "Whether permanent or temporary",
-      "page": 1
-    },
-    {
-      "level": "H2",
-      "text": "Home Town as recorded in the Service Book",
-      "page": 1
-    },
-    {
-      "level": "H2",
-      "text": "Whether wife / husband is employed and if so whether entitled to LTC",
-      "page": 1
-    },
-    {
-      "level": "H2",
-      "text": "Whether the concession is to be availed for visiting home town and if so block for which",
-      "page": 1
-    },
-    {
-      "level": "H2",
-      "text": "LTC is to be availed.",
-      "page": 1
-    },
-    {
-      "level": "H2",
-      "text": "(a) If the concession is to visit anywhere in",
-      "page": 1
-    },
-    {
-      "level": "H2",
-      "text": "India, the place to be visited.",
-      "page": 1
-    },
-    {
-      "level": "H2",
-      "text": "(b) Block for which to be availed.",
-      "page": 1
-    },
-    {
-      "level": "H2",
-      "text": "fare/bus headquarters to home town/place of visit by",
-      "page": 1
-    },
-    {
-      "level": "H2",
-      "text": "shortest route.",
-      "page": 1
-    },
-    {
-      "level": "H2",
-      "text": "Persons in respect of whom LTC is proposed to be availed.",
-      "page": 1
-    },
-    {
-      "level": "H2",
-      "text": "Relationship",
-      "page": 1
-    },
-    {
-      "level": "H2",
-      "text": "Amount of advance required.",
-      "page": 1
-    },
-    {
-      "level": "H2",
-      "text": "I declare that the particulars furnished above are true and correct to the best of my knowledge.  I",
-      "page": 1
-    },
-    {
-      "level": "H2",
-      "text": "undertake to produce the tickets for the outward journey within ten days of receipt of the advance.",
-      "page": 1
-    },
-    {
-      "level": "H2",
-      "text": "In the event of cancellation of the journey or if I fail to produce the tickets within ten days of receipt of",
-      "page": 1
-    },
-    {
-      "level": "H2",
-      "text": "advance, I undertake to refund the entire advance in one lump sum.",
-      "page": 1
-    },
-    {
-      "level": "H2",
-      "text": "Signature of Government Servant.",
-      "page": 1
-    }
+    ...
   ]
 }
+🚀 Docker Instructions
+1. Build the Docker Image
+bash
+Copy
+Edit
+docker build --platform linux/amd64 -t round1b-solution:mytag .
+2. Run the Container
+Linux/macOS:
+
+bash
+Copy
+Edit
+docker run --rm \
+  -v $(pwd)/input:/app/input \
+  -v $(pwd)/output:/app/output \
+  --network none round1b-solution:mytag
+Windows CMD:
+
+c
+Copy
+Edit
+docker run --rm ^
+  -v %cd%/input:/app/input ^
+  -v %cd%/output:/app/output ^
+  --network none round1b-solution:mytag
+✅ Constraints Met
+Constraint	Status
+CPU-only	✅ Yes
+Model size ≤ 1GB	✅ ~90MB used
+Executes under 60s (5 PDFs)	✅
+Offline / no internet	✅ Fully offline
+Outputs valid structured JSON	✅
+
+🔍 Sample Use Case
+Persona: Travel Planner
+Job to Be Done: Plan a 4-day trip for 10 college friends in the South of France.
+Docs: 7 region-specific guides.
+
+System Output:
+
+Day-by-day highlights
+
+Fun group activities
+
+Relevant cuisine, accommodations, and safety tips
+
+🧠 Libraries Used
+PyMuPDF for PDF parsing
+
+sentence-transformers for semantic similarity
+
+scikit-learn, numpy, datetime, json, os
